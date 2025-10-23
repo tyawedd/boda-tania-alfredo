@@ -63,10 +63,22 @@
     .badge{display:inline-block;padding:6px 12px;border-radius:999px;background:rgba(176,141,87,.12);color:var(--ceremony);font-weight:600;border:1px solid rgba(176,141,87,.35);font-family:'Playfair Display',serif;font-style:italic;letter-spacing:.3px}
     .highlight{border-left:4px solid var(--ceremony);padding-left:12px;margin:10px 0}
 
+    /* Botón de audio */
+    .audio-toggle{position:fixed;right:16px;bottom:16px;z-index:1000;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:var(--shadow);backdrop-filter:blur(6px);cursor:pointer}
+    .audio-toggle[aria-pressed="true"]{background:rgba(0,0,0,.8)}
+    .audio-toggle .label{font-size:14px}
+
     footer{padding:40px 0;text-align:center;color:var(--muted);font-size:14px}
   </style>
 </head>
 <body>
+  <!-- Audio de fondo: autoplay silenciado, en loop -->
+  <audio id="bgm" src="https://tyawedd.github.io/boda-tania-alfredo/images/trono.mp3" preload="auto" autoplay loop muted playsinline></audio>
+  <button id="audioBtn" class="audio-toggle" aria-label="Activar música" aria-pressed="false" type="button">
+    <span id="audioIcon" aria-hidden="true">🔇</span>
+    <span class="label">Música</span>
+  </button>
+
   <header class="hero">
     <div class="hero-inner">
       <h1 class="names">Tania <span class="amp">&</span> Alfredo</h1>
@@ -156,6 +168,7 @@
   </footer>
 
   <script>
+    // ======= Cuenta regresiva =======
     const weddingDate = new Date('2025-12-20T18:00:00');
     function updateCountdown(){
       const now = new Date();
@@ -174,16 +187,66 @@
     }
     const timer=setInterval(updateCountdown,1000);updateCountdown();
 
+    // ======= Slideshow =======
     function makeSlideshow(rootId,dotsId,delay=3000){
       const root=document.getElementById(rootId); if(!root) return;
       const slides=Array.from(root.querySelectorAll('.slide'));
       const dotsC=document.getElementById(dotsId);
       let i=0,t=null;
       slides.forEach((_,idx)=>{const b=document.createElement('button');b.setAttribute('aria-label',`Ir a foto ${idx+1}`);b.addEventListener('click',()=>go(idx,true));dotsC.appendChild(b);});
-      function go(n,manual=false){slides[i].classList.remove('active');i=(n+slides.length)%slides.length;slides[i].classList.add('active');dotsC.querySelectorAll('button').forEach((d,idx)=>d.setAttribute('aria-current',idx===i?'true':'false'));if(manual){restart();}}
-      function next(){go(i+1);}function restart(){clearInterval(t);t=setInterval(next,delay);}slides[0]&&slides[0].classList.add('active');go(0);t=setInterval(next,delay);root.addEventListener('mouseenter',()=>clearInterval(t));root.addEventListener('mouseleave',restart);
+      function go(n,manual=false){
+        slides[i].classList.remove('active');
+        i=(n+slides.length)%slides.length;
+        slides[i].classList.add('active');
+        dotsC.querySelectorAll('button').forEach((d,idx)=>d.setAttribute('aria-current',idx===i?'true':'false'));
+        if(manual){restart();}
+      }
+      function next(){go(i+1);} 
+      function restart(){clearInterval(t);t=setInterval(next,delay);} 
+      slides[0]&&slides[0].classList.add('active');
+      go(0);
+      t=setInterval(next,delay);
+      root.addEventListener('mouseenter',()=>clearInterval(t));
+      root.addEventListener('mouseleave',restart);
     }
     makeSlideshow('slideshow-mini','dots-mini',3000);
+
+    // ======= Audio: autoplay silenciado + botón toggle =======
+    const audio = document.getElementById('bgm');
+    const btn = document.getElementById('audioBtn');
+    const icon = document.getElementById('audioIcon');
+
+    (async () => {
+      try {
+        audio.volume = 0.6; // volumen cómodo
+        // estado recordado
+        const saved = localStorage.getItem('bgmMuted');
+        if(saved !== null){
+          audio.muted = saved === 'true';
+        }
+        await audio.play();
+      } catch(e) {
+        // Algunos navegadores requieren interacción previa; el botón permitirá activar.
+      }
+      updateAudioUI();
+    })();
+
+    function updateAudioUI(){
+      const playing = !audio.paused && !audio.muted;
+      icon.textContent = playing ? '🔊' : '🔇';
+      btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
+      btn.setAttribute('aria-label', playing ? 'Silenciar música' : 'Activar música');
+    }
+
+    btn.addEventListener('click', async () => {
+      try {
+        // Si estaba pausado por políticas, intenta reproducir
+        if(audio.paused){ await audio.play(); }
+        audio.muted = !audio.muted; // alternar silencio
+        localStorage.setItem('bgmMuted', String(audio.muted));
+      } catch(e) {}
+      updateAudioUI();
+    });
   </script>
 </body>
 </html>
