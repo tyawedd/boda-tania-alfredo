@@ -44,11 +44,19 @@
     .timeline{position:relative;padding-left:0}
     .t-item{margin:20px 0;padding-bottom:10px;border-bottom:2px solid var(--brand);line-height:1.6}
     .t-item:last-child{border-bottom:none}
-    .gallery{columns:1;column-gap:16px}
+    .gallery{display:none} /* desactivar grilla estática para usar slideshow */
     .gallery img{width:100%;border-radius:16px;margin:0 0 16px;break-inside:avoid;box-shadow:var(--shadow)}
     @media(min-width:640px){.gallery{columns:2}}
     @media(min-width:1024px){.gallery{columns:3}}
     footer{padding:40px 0;text-align:center;color:var(--muted);font-size:14px}
+    /* Slideshow */
+    .slideshow{position:relative;width:100%;max-width:960px;margin:10px auto;border-radius:20px;overflow:hidden;box-shadow:var(--shadow);background:#000}
+    .slideshow .slide{position:absolute;inset:0;opacity:0;transition:opacity 900ms ease}
+    .slideshow .slide.active{opacity:1}
+    .slideshow img{width:100%;height:560px;object-fit:cover}
+    .dots{position:absolute;left:0;right:0;bottom:12px;display:flex;gap:8px;justify-content:center}
+    .dots button{width:10px;height:10px;border-radius:50%;border:0;background:rgba(255,255,255,.5);cursor:pointer}
+    .dots button[aria-current="true"]{background:var(--accent)}
   </style>
 </head>
 <body>
@@ -110,17 +118,18 @@
 
     <section id="galeria">
       <h2>Galería</h2>
-      <div class="gallery">
-        <img src="images/galeria-1.jpg" alt="Tania y Alfredo 1" />
-        <img src="images/galeria-2.jpg" alt="Tania y Alfredo 2" />
-        <img src="images/galeria-3.jpg" alt="Tania y Alfredo 3" />
-        <img src="images/galeria-4.jpg" alt="Tania y Alfredo 4" />
-        <img src="images/galeria-5.jpg" alt="Tania y Alfredo 5" />
-        <img src="images/galeria-6.jpg" alt="Tania y Alfredo 6" />
-        <img src="images/galeria-7.jpg" alt="Tania y Alfredo 7" />
-        <img src="images/galeria-8.jpg" alt="Tania y Alfredo 8" />
-        <img src="images/galeria-9.jpg" alt="Tania y Alfredo 9" />
-        <img src="images/galeria-10.jpg" alt="Tania y Alfredo 10" />
+      <div class="slideshow" id="slideshow" aria-label="Presentación de fotos" role="region">
+        <div class="slide active"><img src="images/galeria-1.jpg" alt="Tania y Alfredo 1"/></div>
+        <div class="slide"><img src="images/galeria-2.jpg" alt="Tania y Alfredo 2"/></div>
+        <div class="slide"><img src="images/galeria-3.jpg" alt="Tania y Alfredo 3"/></div>
+        <div class="slide"><img src="images/galeria-4.jpg" alt="Tania y Alfredo 4"/></div>
+        <div class="slide"><img src="images/galeria-5.jpg" alt="Tania y Alfredo 5"/></div>
+        <div class="slide"><img src="images/galeria-6.jpg" alt="Tania y Alfredo 6"/></div>
+        <div class="slide"><img src="images/galeria-7.jpg" alt="Tania y Alfredo 7"/></div>
+        <div class="slide"><img src="images/galeria-8.jpg" alt="Tania y Alfredo 8"/></div>
+        <div class="slide"><img src="images/galeria-9.jpg" alt="Tania y Alfredo 9"/></div>
+        <div class="slide"><img src="images/galeria-10.jpg" alt="Tania y Alfredo 10"/></div>
+        <div class="dots" id="dots" aria-hidden="true"></div>
       </div>
     </section>
 
@@ -157,6 +166,34 @@
     }
     const timer=setInterval(updateCountdown,1000);
     updateCountdown();
+
+    // ===== Slideshow automático =====
+    (function(){
+      const slides = Array.from(document.querySelectorAll('#slideshow .slide'));
+      const dotsC = document.getElementById('dots');
+      let i = 0, t = null; const delay = 5000; // 5s
+      // crear dots
+      slides.forEach((_,idx)=>{
+        const b=document.createElement('button');
+        b.setAttribute('aria-label',`Ir a foto ${idx+1}`);
+        b.addEventListener('click', ()=>{go(idx,true)});
+        dotsC.appendChild(b);
+      });
+      function go(n,manual=false){
+        slides[i].classList.remove('active');
+        i = (n+slides.length)%slides.length;
+        slides[i].classList.add('active');
+        dotsC.querySelectorAll('button').forEach((d,idx)=>d.setAttribute('aria-current', idx===i?'true':'false'));
+        if(manual){restart();}
+      }
+      function next(){ go(i+1); }
+      function restart(){ clearInterval(t); t=setInterval(next, delay); }
+      go(0); t=setInterval(next, delay);
+      // pausar al pasar el mouse
+      const box=document.getElementById('slideshow');
+      box.addEventListener('mouseenter', ()=>clearInterval(t));
+      box.addEventListener('mouseleave', restart);
+    })();
   </script>
 </body>
 </html>
